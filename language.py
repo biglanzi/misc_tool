@@ -11,17 +11,20 @@ import sys
 import os
 import json
 import xlrd
+import chardet
 
 def trans_xls(cfg):
 	item = cfg['file']
 	data = {}
 	
+	print chardet.detect(cfg['path'])
 	if not os.path.isdir(cfg['path']):
-		print u'生成语言文件路径 :[   ' + os.getcwd() + '  ]'
+		print u'生成语言文件路径 :[   ' + os.getcwd().decode('GBK') + '  ]' 
 	else:
-		print u'生成语言文件路径 :[   ' + cfg['path'] + '  ]'
+		print u'生成语言文件路径 :[   ' + cfg['path'].decode('utf-8') + '	]'
+		
 	
-	bookHandle=xlrd.open_workbook(item)
+	bookHandle 	= xlrd.open_workbook(item)
 	sheetHandle = bookHandle.sheet_by_name('language')
 	
 	for row in range(3,sheetHandle.nrows):
@@ -45,7 +48,7 @@ def trans_xls(cfg):
 				data[sheetHandle.cell_value(2,col)].update(value)
 
 	for country in data:
-		file=open(cfg['path']+'/'+country+'.lang', 'w')
+		file=open(cfg['path'].decode('utf-8')+'/'+country+'.lang', 'w')
 		file.write(json.dumps(data[country]).replace("\\\\","\\")) 
 		file.close()
 		
@@ -53,16 +56,30 @@ def get_cfg():
 	try:
 		file=open('config')
 	except IOError:
-		default_data = {'path':os.getcwd(),'file':'Language.xlsx','country':{'en':1,'zh':0,'tr':0}}
+		
+		default_data = {'path':os.getcwd().decode('GBK').encode('utf-8'),'file':'Language.xlsx','country':{'en':1,'zh':0,'tr':0}}
+		
 		file=open('config','w')
-		file.write(json.dumps(default_data))
+		file.write(json.dumps(default_data,ensure_ascii=False))
 		file.close()
+		
 		return default_data
 	else:
 		str=file.read()
 		str=json.loads(str)
+		str = byteify(str)
 		file.close()
 		return str
+		
+def byteify(input):
+    if isinstance(input, dict):
+        return {byteify(key):byteify(value) for key,value in input.iteritems()}
+    elif isinstance(input, list):
+        return [byteify(element) for element in input]
+    elif isinstance(input, unicode):
+        return input.encode('utf-8')
+    else:
+        return input
 		
 def show_info():
 	str=u'''工具介绍：
